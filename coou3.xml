@@ -12,7 +12,7 @@ for _, obj in pairs(lighting:GetChildren()) do
 end
 
 -- 木星资源ID
-local JUPITER_TEXTURE_ID = "rbxassetid://1524699090"
+local JUPITER_TEXTURE_ID = "rbxassetid://5198893884"
 
 -- 创建星空天空盒（夜晚用）
 local NightSky = Instance.new("Sky")
