@@ -1,0 +1,221 @@
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
+
+-- 清除现有的天空效果
+local lighting = game:GetService("Lighting")
+for _, obj in pairs(lighting:GetChildren()) do
+    if obj:IsA("Sky") or obj:IsA("BloomEffect") or obj:IsA("BlurEffect") or obj:IsA("ColorCorrectionEffect") or obj:IsA("SunRaysEffect") then
+        obj:Destroy()
+    end
+end
+
+-- 木星贴图ID
+local JupiterTexture = "rbxassetid://1524699090"
+
+-- 创建夜晚星空天空盒（带木星）
+local NightSky = Instance.new("Sky")
+NightSky.Name = "StarryNightWithJupiter"
+NightSky.SkyboxUp = "rbxassetid://159454299"
+NightSky.SkyboxLf = "rbxassetid://159454299"
+NightSky.SkyboxBk = "rbxassetid://159454299"
+NightSky.SkyboxFt = "rbxassetid://159454299"
+NightSky.SkyboxDn = "rbxassetid://159454299"
+NightSky.SkyboxRt = JupiterTexture  -- 右侧显示木星
+NightSky.StarCount = 8000
+NightSky.Parent = lighting
+
+-- 创建红色月亮效果
+local MoonRays = Instance.new("SunRaysEffect")
+MoonRays.Name = "RedMoonRays"
+MoonRays.Intensity = 0.2
+MoonRays.Spread = 0.15
+MoonRays.Parent = lighting
+
+-- 创建月光辉光效果
+local MoonBloom = Instance.new("BloomEffect")
+MoonBloom.Name = "MoonBloom"
+MoonBloom.Intensity = 0.4
+MoonBloom.Threshold = 0.15
+MoonBloom.Size = 60
+MoonBloom.Parent = lighting
+
+-- 月光颜色校正
+local MoonTint = Instance.new("ColorCorrectionEffect")
+MoonTint.Name = "MoonTint"
+MoonTint.Saturation = 0.05
+MoonTint.TintColor = Color3.fromRGB(255, 80, 80)
+MoonTint.Parent = lighting
+
+-- 木星辉光效果
+local JupiterBloom = Instance.new("BloomEffect")
+JupiterBloom.Name = "JupiterBloom"
+JupiterBloom.Intensity = 0.25
+JupiterBloom.Threshold = 0.1
+JupiterBloom.Size = 35
+JupiterBloom.Parent = lighting
+
+-- 创建白天天空盒（地球蓝天）
+local DaySky = Instance.new("Sky")
+DaySky.Name = "EarthDaySky"
+DaySky.SkyboxUp = "rbxassetid://985114447"
+DaySky.SkyboxLf = "rbxassetid://985114322"
+DaySky.SkyboxBk = "rbxassetid://985114322"
+DaySky.SkyboxFt = "rbxassetid://985114322"
+DaySky.SkyboxDn = "rbxassetid://985114193"
+DaySky.SkyboxRt = "rbxassetid://985114322"  -- 蓝天右（不要木星）
+DaySky.SunAngularSize = 0.3
+DaySky.CelestialBodiesShown = false
+DaySky.Enabled = false
+DaySky.Parent = lighting
+
+-- 时间流逝设置
+local TimeSpeed = 50  -- 时间流逝速度（真实时间秒数对应游戏时间1小时）
+local CurrentTime = 6  -- 初始时间（早上6点）
+
+-- 时间阶段定义
+local TimeStages = {
+    Dawn = {Start = 5, End = 7},    -- 黎明
+    Morning = {Start = 7, End = 12}, -- 早晨
+    Afternoon = {Start = 12, End = 17}, -- 下午
+    Evening = {Start = 17, End = 19}, -- 傍晚
+    Night = {Start = 19, End = 5}    -- 夜晚
+}
+
+-- 获取当前时间阶段
+function GetTimeStage(hour)
+    for stage, times in pairs(TimeStages) do
+        if times.Start <= times.End then
+            if hour >= times.Start and hour < times.End then
+                return stage
+            end
+        else -- 处理跨天的情况（夜晚）
+            if hour >= times.Start or hour < times.End then
+                return stage
+            end
+        end
+    end
+    return "Night"
+end
+
+-- 平滑过渡函数
+function Lerp(a, b, t)
+    return a + (b - a) * math.min(math.max(t, 0), 1)
+end
+
+-- 根据时间更新光照
+function UpdateLightingBasedOnTime(hour)
+    local stage = GetTimeStage(hour)
+    local progress = 0
+    
+    -- 计算当前阶段的进度
+    if stage == "Dawn" then
+        progress = (hour - TimeStages.Dawn.Start) / (TimeStages.Dawn.End - TimeStages.Dawn.Start)
+    elseif stage == "Morning" then
+        progress = (hour - TimeStages.Morning.Start) / (TimeStages.Morning.End - TimeStages.Morning.Start)
+    elseif stage == "Afternoon" then
+        progress = (hour - TimeStages.Afternoon.Start) / (TimeStages.Afternoon.End - TimeStages.Afternoon.Start)
+    elseif stage == "Evening" then
+        progress = (hour - TimeStages.Evening.Start) / (TimeStages.Evening.End - TimeStages.Evening.Start)
+    elseif stage == "Night" then
+        if hour >= TimeStages.Night.Start then
+            progress = (hour - TimeStages.Night.Start) / (24 - TimeStages.Night.Start + TimeStages.Night.End)
+        else
+            progress = (hour + 24 - TimeStages.Night.Start) / (24 - TimeStages.Night.Start + TimeStages.Night.End)
+        end
+    end
+
+    -- 根据时间阶段设置光照
+    if stage == "Night" or stage == "Dawn" then
+        -- 夜晚或黎明：显示星空和月亮
+        NightSky.Enabled = true
+        DaySky.Enabled = false
+        MoonRays.Enabled = true
+        MoonBloom.Enabled = true
+        MoonTint.Enabled = true
+        JupiterBloom.Enabled = true
+        
+        if stage == "Night" then
+            -- 深夜
+            lighting.Brightness = Lerp(1.8, 2.0, progress)
+            lighting.Ambient = Color3.fromRGB(40, 25, 55)
+            MoonRays.Intensity = Lerp(0.25, 0.2, progress)
+        else
+            -- 黎明
+            lighting.Brightness = Lerp(1.5, 2.0, progress)
+            lighting.Ambient = Color3.fromRGB(60, 40, 80)
+            MoonRays.Intensity = Lerp(0.1, 0.05, progress)
+        end
+    else
+        -- 白天：显示蓝天
+        NightSky.Enabled = false
+        DaySky.Enabled = true
+        MoonRays.Enabled = false
+        MoonBloom.Enabled = false
+        MoonTint.Enabled = false
+        JupiterBloom.Enabled = false
+        
+        if stage == "Morning" then
+            -- 早晨
+            lighting.Brightness = Lerp(2.0, 2.8, progress)
+            lighting.Ambient = Color3.fromRGB(120, 120, 150)
+        elseif stage == "Afternoon" then
+            -- 下午
+            lighting.Brightness = Lerp(2.8, 2.2, progress)
+            lighting.Ambient = Color3.fromRGB(150, 150, 180)
+        elseif stage == "Evening" then
+            -- 傍晚
+            lighting.Brightness = Lerp(2.2, 1.8, progress)
+            lighting.Ambient = Color3.fromRGB(100, 80, 120)
+        end
+    end
+
+    -- 设置游戏内时间
+    lighting.ClockTime = hour
+end
+
+-- 时间流逝主循环
+function StartTimeCycle()
+    while true do
+        -- 更新时间
+        CurrentTime = CurrentTime + (1 / 3600) * (1 / TimeSpeed) * 60  -- 每帧推进时间
+        
+        -- 确保时间在0-24范围内
+        if CurrentTime >= 24 then
+            CurrentTime = CurrentTime - 24
+        end
+        
+        -- 更新光照
+        UpdateLightingBasedOnTime(CurrentTime)
+        
+        -- 显示当前时间（调试用）
+        local hour = math.floor(CurrentTime)
+        local minute = math.floor((CurrentTime - hour) * 60)
+        local stage = GetTimeStage(CurrentTime)
+        
+        -- 每10秒打印一次时间（可选）
+        if minute % 10 == 0 and math.random() < 0.1 then
+            print(string.format("当前时间: %02d:%02d - %s", hour, minute, stage))
+        end
+        
+        wait(1/60)  -- 每帧更新
+    end
+end
+
+-- 初始化光照
+UpdateLightingBasedOnTime(CurrentTime)
+
+-- 启动时间流逝
+spawn(StartTimeCycle)
+
+-- 控制函数
+function SetTimeSpeed(speed)
+    TimeSpeed = math.max(1, speed)
+    print("时间流逝速度设置为: " .. TimeSpeed .. "x")
+end
+
+function SetTime(hour)
+    CurrentTime = math.max(0, math.min(23.99, hour))
+    UpdateLightingBasedOnTime(CurrentTime)
+    print(string.format("时间设置为: %02d:%02d", math.floor(CurrentTime), math.floor((CurrentTime - math.floor(CurrentTime)) * 60)))
+end
