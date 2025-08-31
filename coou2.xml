@@ -2,226 +2,111 @@ if not game:IsLoaded() then
     game.Loaded:Wait()
 end
 
--- 清除现有的天空效果
 local lighting = game:GetService("Lighting")
+
+-- 清除现有的效果
 for _, obj in pairs(lighting:GetChildren()) do
     if obj:IsA("Sky") or obj:IsA("BloomEffect") or obj:IsA("BlurEffect") or obj:IsA("ColorCorrectionEffect") or obj:IsA("SunRaysEffect") then
         obj:Destroy()
     end
 end
 
--- 木星贴图ID
-local JupiterTexture = "rbxassetid://1524699090"
-
--- 创建夜晚星空天空盒（带木星）
+-- 创建星空天空盒（夜晚用）
 local NightSky = Instance.new("Sky")
-NightSky.Name = "StarryNightWithJupiter"
+NightSky.Name = "StarryNightSky"
 NightSky.SkyboxUp = "rbxassetid://159454299"
 NightSky.SkyboxLf = "rbxassetid://159454299"
 NightSky.SkyboxBk = "rbxassetid://159454299"
 NightSky.SkyboxFt = "rbxassetid://159454299"
 NightSky.SkyboxDn = "rbxassetid://159454299"
-NightSky.SkyboxRt = JupiterTexture  -- 右侧显示木星
-NightSky.StarCount = 3000  -- 减少星星数量，更自然
+NightSky.SkyboxRt = "rbxassetid://1524699090"  -- 木星在右侧
+NightSky.StarCount = 2000
 NightSky.Parent = lighting
 
--- 创建柔和的月光效果
-local MoonRays = Instance.new("SunRaysEffect")
-MoonRays.Name = "RedMoonRays"
-MoonRays.Intensity = 0.08  -- 大幅降低强度
-MoonRays.Spread = 0.2
-MoonRays.Enabled = false
-MoonRays.Parent = lighting
-
--- 创建柔和的月光辉光
-local MoonBloom = Instance.new("BloomEffect")
-MoonBloom.Name = "MoonBloom"
-MoonBloom.Intensity = 0.15  -- 大幅降低强度
-MoonBloom.Threshold = 0.25
-MoonBloom.Size = 40
-MoonBloom.Enabled = false
-MoonBloom.Parent = lighting
-
--- 柔和的月光颜色校正
-local MoonTint = Instance.new("ColorCorrectionEffect")
-MoonTint.Name = "MoonTint"
-MoonTint.Saturation = -0.1  -- 稍微降低饱和度
-MoonTint.TintColor = Color3.fromRGB(255, 200, 200)  -- 更淡的红色
-MoonTint.Enabled = false
-MoonTint.Parent = lighting
-
--- 柔和的木星辉光
-local JupiterBloom = Instance.new("BloomEffect")
-JupiterBloom.Name = "JupiterBloom"
-JupiterBloom.Intensity = 0.15
-JupiterBloom.Threshold = 0.2
-JupiterBloom.Size = 25
-JupiterBloom.Enabled = false
-JupiterBloom.Parent = lighting
-
--- 创建白天天空盒（地球蓝天）
+-- 创建蓝天天空盒（白天用）
 local DaySky = Instance.new("Sky")
-DaySky.Name = "EarthDaySky"
+DaySky.Name = "DaySky"
 DaySky.SkyboxUp = "rbxassetid://985114447"
 DaySky.SkyboxLf = "rbxassetid://985114322"
 DaySky.SkyboxBk = "rbxassetid://985114322"
 DaySky.SkyboxFt = "rbxassetid://985114322"
 DaySky.SkyboxDn = "rbxassetid://985114193"
-DaySky.SkyboxRt = "rbxassetid://985114322"  -- 蓝天右
+DaySky.SkyboxRt = "rbxassetid://985114322"
 DaySky.SunAngularSize = 0.3
 DaySky.CelestialBodiesShown = false
-DaySky.Enabled = true  -- 默认启用白天
 DaySky.Parent = lighting
 
--- 时间流逝设置
-local TimeSpeed = 120  -- 更慢的时间流逝
-local CurrentTime = 12  -- 初始时间中午12点
+-- 月光效果（夜晚用）
+local MoonRays = Instance.new("SunRaysEffect")
+MoonRays.Name = "MoonRays"
+MoonRays.Intensity = 0.05
+MoonRays.Spread = 0.1
+MoonRays.Parent = lighting
 
--- 时间阶段定义
-local TimeStages = {
-    Dawn = {Start = 5, End = 7},    -- 黎明
-    Morning = {Start = 7, End = 12}, -- 早晨
-    Afternoon = {Start = 12, End = 17}, -- 下午
-    Evening = {Start = 17, End = 19}, -- 傍晚
-    Night = {Start = 19, End = 5}    -- 夜晚
-}
+local MoonBloom = Instance.new("BloomEffect")
+MoonBloom.Name = "MoonBloom"
+MoonBloom.Intensity = 0.1
+MoonBloom.Threshold = 0.2
+MoonBloom.Size = 30
+MoonBloom.Parent = lighting
 
--- 获取当前时间阶段
-function GetTimeStage(hour)
-    for stage, times in pairs(TimeStages) do
-        if times.Start <= times.End then
-            if hour >= times.Start and hour < times.End then
-                return stage
-            end
-        else -- 处理跨天的情况
-            if hour >= times.Start or hour < times.End then
-                return stage
-            end
-        end
-    end
-    return "Night"
-end
+-- 时间设置
+local currentTime = 12  -- 中午12点开始
+local timeSpeed = 60    -- 时间流逝速度
 
--- 平滑过渡函数
-function Lerp(a, b, t)
-    return a + (b - a) * math.min(math.max(t, 0), 1)
-end
+-- 设置初始为白天
+DaySky.Enabled = true
+NightSky.Enabled = false
+MoonRays.Enabled = false
+MoonBloom.Enabled = false
 
--- 根据时间更新光照（更加自然的设置）
-function UpdateLightingBasedOnTime(hour)
-    local stage = GetTimeStage(hour)
-    local progress = 0
-    
-    -- 计算当前阶段的进度
-    if stage == "Dawn" then
-        progress = (hour - TimeStages.Dawn.Start) / (TimeStages.Dawn.End - TimeStages.Dawn.Start)
-    elseif stage == "Morning" then
-        progress = (hour - TimeStages.Morning.Start) / (TimeStages.Morning.End - TimeStages.Morning.Start)
-    elseif stage == "Afternoon" then
-        progress = (hour - TimeStages.Afternoon.Start) / (TimeStages.Afternoon.End - TimeStages.Afternoon.Start)
-    elseif stage == "Evening" then
-        progress = (hour - TimeStages.Evening.Start) / (TimeStages.Evening.End - TimeStages.Evening.Start)
-    elseif stage == "Night" then
-        if hour >= TimeStages.Night.Start then
-            progress = (hour - TimeStages.Night.Start) / (24 - TimeStages.Night.Start + TimeStages.Night.End)
-        else
-            progress = (hour + 24 - TimeStages.Night.Start) / (24 - TimeStages.Night.Start + TimeStages.Night.End)
-        end
-    end
+-- 设置初始光照
+lighting.ClockTime = currentTime
+lighting.Brightness = 2.0
+lighting.Ambient = Color3.fromRGB(128, 128, 128)
+lighting.FogColor = Color3.fromRGB(200, 220, 255)
+lighting.FogEnd = 1000
+lighting.FogStart = 0
+lighting.ExposureCompensation = 0.3
 
-    -- 设置游戏内时间
-    lighting.ClockTime = hour
-    
-    -- 根据时间阶段设置更加自然的光照
-    if stage == "Night" then
-        -- 夜晚：柔和的月光效果
-        NightSky.Enabled = true
-        DaySky.Enabled = false
-        MoonRays.Enabled = true
-        MoonBloom.Enabled = true
-        MoonTint.Enabled = true
-        JupiterBloom.Enabled = true
-        
-        lighting.Brightness = 1.2
-        lighting.Ambient = Color3.fromRGB(30, 30, 50)
-        lighting.FogColor = Color3.fromRGB(20, 20, 40)
-        lighting.FogEnd = 2000
-        lighting.ExposureCompensation = 0.1
-        MoonRays.Intensity = 0.06
-        
-    elseif stage == "Dawn" then
-        -- 黎明：柔和的过渡
-        NightSky.Enabled = false
-        DaySky.Enabled = true
-        MoonRays.Enabled = false
-        MoonBloom.Enabled = false
-        MoonTint.Enabled = false
-        JupiterBloom.Enabled = false
-        
-        lighting.Brightness = Lerp(1.2, 1.8, progress)
-        lighting.Ambient = Color3.fromRGB(Lerp(50, 100, progress), Lerp(50, 120, progress), Lerp(70, 150, progress))
-        
-    else
-        -- 白天：自然的光照
-        NightSky.Enabled = false
-        DaySky.Enabled = true
-        MoonRays.Enabled = false
-        MoonBloom.Enabled = false
-        MoonTint.Enabled = false
-        JupiterBloom.Enabled = false
-        
-        if stage == "Morning" then
-            lighting.Brightness = Lerp(1.8, 2.2, progress)
-            lighting.Ambient = Color3.fromRGB(120, 140, 180)
-        elseif stage == "Afternoon" then
-            lighting.Brightness = Lerp(2.2, 1.8, progress)
-            lighting.Ambient = Color3.fromRGB(150, 160, 200)
-        elseif stage == "Evening" then
-            lighting.Brightness = Lerp(1.8, 1.3, progress)
-            lighting.Ambient = Color3.fromRGB(100, 80, 120)
-        end
-        
-        lighting.FogColor = Color3.fromRGB(180, 200, 220)
-        lighting.FogEnd = 5000
-        lighting.ExposureCompensation = 0.3
-    end
-end
-
--- 时间流逝主循环
-function StartTimeCycle()
+-- 时间流逝函数
+local function updateTime()
     while true do
         -- 更新时间
-        CurrentTime = CurrentTime + (1 / 3600) * (1 / TimeSpeed) * 60
+        currentTime = currentTime + 0.1  -- 每6秒增加1小时
         
-        -- 确保时间在0-24范围内
-        if CurrentTime >= 24 then
-            CurrentTime = CurrentTime - 24
+        if currentTime >= 24 then
+            currentTime = 0
         end
         
-        -- 更新光照
-        UpdateLightingBasedOnTime(CurrentTime)
+        lighting.ClockTime = currentTime
         
-        wait(1/30)  -- 降低更新频率，减少性能消耗
+        -- 根据时间切换昼夜
+        if currentTime >= 19 or currentTime < 5 then
+            -- 夜晚 (7pm - 5am)
+            DaySky.Enabled = false
+            NightSky.Enabled = true
+            MoonRays.Enabled = true
+            MoonBloom.Enabled = true
+            lighting.Brightness = 0.8
+            lighting.Ambient = Color3.fromRGB(40, 40, 60)
+        else
+            -- 白天 (5am - 7pm)
+            DaySky.Enabled = true
+            NightSky.Enabled = false
+            MoonRays.Enabled = false
+            MoonBloom.Enabled = false
+            lighting.Brightness = 2.0
+            lighting.Ambient = Color3.fromRGB(128, 128, 128)
+        end
+        
+        wait(6)  -- 每6秒更新一次
     end
 end
 
--- 初始化默认光照（白天设置）
-lighting.Brightness = 2.2
-lighting.Ambient = Color3.fromRGB(150, 160, 200)
-lighting.FogColor = Color3.fromRGB(180, 200, 220)
-lighting.FogEnd = 5000
-lighting.FogStart = 100
-lighting.ExposureCompensation = 0.3
-lighting.ShadowSoftness = 0.2
-lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
-
--- 初始化时间
-UpdateLightingBasedOnTime(CurrentTime)
-
 -- 启动时间流逝
-spawn(StartTimeCycle)
+spawn(updateTime)
 
-print("自然时间流逝系统启动完成！")
-print("初始时间: 中午12点（白天）")
-print("时间流逝速度: 120x（较慢的自然变化）")
-print("视觉效果已调整为更加自然，不会影响游戏体验")
+print("时间流逝系统已启动！")
+print("当前时间: " .. math.floor(currentTime) .. ":00")
+print("时间会自动流逝，每6秒游戏时间前进1小时")
