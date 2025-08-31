@@ -1,0 +1,96 @@
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
+
+-- 清除现有的天空效果
+local lighting = game:GetService("Lighting")
+for _, obj in pairs(lighting:GetChildren()) do
+    if obj:IsA("Sky") or obj:IsA("BloomEffect") or obj:IsA("BlurEffect") or obj:IsA("ColorCorrectionEffect") or obj:IsA("SunRaysEffect") then
+        obj:Destroy()
+    end
+end
+
+-- 创建新的星空天空盒
+local StarrySky = Instance.new("Sky")
+StarrySky.Name = "StarryNightSky"
+StarrySky.SkyboxUp = "rbxassetid://159454299"  -- 深蓝色星空顶
+StarrySky.SkyboxLf = "rbxassetid://159454299"  -- 深蓝色星空左
+StarrySky.SkyboxBk = "rbxassetid://159454299"  -- 深蓝色星空后
+StarrySky.SkyboxFt = "rbxassetid://159454299"  -- 深蓝色星空前
+StarrySky.SkyboxDn = "rbxassetid://159454299"  -- 深蓝色星空底
+StarrySky.SkyboxRt = "rbxassetid://159454299"  -- 深蓝色星空右
+StarrySky.StarCount = 5000  -- 增加星星数量
+StarrySky.Parent = lighting
+
+-- 创建红色月亮效果（使用太阳位置）
+local Moon = Instance.new("SunRaysEffect")
+Moon.Name = "RedMoonRays"
+Moon.Intensity = 0.15
+Moon.Spread = 0.1
+Moon.Parent = lighting
+
+-- 创建月光辉光效果
+local MoonBloom = Instance.new("BloomEffect")
+MoonBloom.Name = "MoonBloom"
+MoonBloom.Intensity = 0.3
+MoonBloom.Threshold = 0.2
+MoonBloom.Size = 50
+MoonBloom.Parent = lighting
+
+-- 创建颜色校正让月亮变红
+local MoonTint = Instance.new("ColorCorrectionEffect")
+MoonTint.Name = "MoonTint"
+MoonTint.Saturation = 0.1
+MoonTint.TintColor = Color3.fromRGB(255, 100, 100)  -- 红色调
+MoonTint.Parent = lighting
+
+-- 设置光照属性
+lighting.Brightness = 1.8
+lighting.ColorShift_Bottom = Color3.fromRGB(20, 0, 30)  -- 深紫色底部
+lighting.ColorShift_Top = Color3.fromRGB(255, 100, 100)  -- 红色顶部（月光）
+lighting.OutdoorAmbient = Color3.fromRGB(40, 20, 60)  -- 紫蓝色环境光
+lighting.ClockTime = 0  -- 午夜时间（让月亮更明显）
+lighting.FogColor = Color3.fromRGB(30, 10, 40)  -- 深紫色雾
+lighting.FogEnd = 2000
+lighting.FogStart = 100
+lighting.ExposureCompensation = 0.3
+lighting.ShadowSoftness = 0.1
+lighting.Ambient = Color3.fromRGB(30, 15, 45)  -- 深蓝紫色环境光
+
+-- 白天设置（如果需要切换）
+local DaySky = Instance.new("Sky")
+DaySky.Name = "DaySky"
+DaySky.SkyboxUp = "rbxassetid://1401751712"  -- 蓝天顶
+DaySky.SkyboxLf = "rbxassetid://1401751442"  -- 蓝天左
+DaySky.SkyboxBk = "rbxassetid://1401751442"  -- 蓝天后
+DaySky.SkyboxFt = "rbxassetid://1401751442"  -- 蓝天前
+DaySky.SkyboxDn = "rbxassetid://1401751256"  -- 地面
+DaySky.SkyboxRt = "rbxassetid://1401751442"  -- 蓝天右
+DaySky.SunAngularSize = 0.5  -- 很小的太阳（在远处）
+DaySky.CelestialBodiesShown = true
+DaySky.Enabled = false  -- 默认禁用（使用夜空）
+DaySky.Parent = lighting
+
+-- 木星贴图（可以放在天空盒的特定位置）
+-- 注意：这需要自定义纹理，你可以上传木星贴图并替换下面的ID
+local JupiterTexture = "rbxassetid://1524699090"
+
+-- 切换函数（如果需要手动切换昼夜）
+function SwitchToDay()
+    StarrySky.Enabled = false
+    DaySky.Enabled = true
+    lighting.ClockTime = 14  -- 下午时间
+    Moon.Enabled = false
+    MoonBloom.Enabled = false
+end
+
+function SwitchToNight()
+    StarrySky.Enabled = true
+    DaySky.Enabled = false
+    lighting.ClockTime = 0  -- 午夜时间
+    Moon.Enabled = true
+    MoonBloom.Enabled = true
+end
+
+-- 默认启用夜空
+SwitchToNight()
