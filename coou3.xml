@@ -1,1 +1,159 @@
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
 
+local lighting = game:GetService("Lighting")
+
+-- 清除现有的效果
+for _, obj in pairs(lighting:GetChildren()) do
+    if obj:IsA("Sky") or obj:IsA("BloomEffect") or obj:IsA("BlurEffect") or obj:IsA("ColorCorrectionEffect") or obj:IsA("SunRaysEffect") then
+        obj:Destroy()
+    end
+end
+
+-- 木星资源ID
+local JUPITER_TEXTURE_ID = "rbxassetid://1524699090"
+
+-- 创建星空天空盒（夜晚用）
+local NightSky = Instance.new("Sky")
+NightSky.Name = "StarryNightSky"
+NightSky.SkyboxUp = "rbxassetid://159454299"
+NightSky.SkyboxLf = "rbxassetid://159454299"
+NightSky.SkyboxBk = "rbxassetid://159454299"
+NightSky.SkyboxFt = "rbxassetid://159454299"
+NightSky.SkyboxDn = "rbxassetid://159454299"
+NightSky.SkyboxRt = JUPITER_TEXTURE_ID  -- 木星在右侧（使用明确的资源ID）
+NightSky.StarCount = 2000
+NightSky.Parent = lighting
+
+print("木星纹理已加载: " .. JUPITER_TEXTURE_ID)
+
+-- 创建蓝天天空盒（白天用）
+local DaySky = Instance.new("Sky")
+DaySky.Name = "DaySky"
+DaySky.SkyboxUp = "rbxassetid://985114447"
+DaySky.SkyboxLf = "rbxassetid://985114322"
+DaySky.SkyboxBk = "rbxassetid://985114322"
+DaySky.SkyboxFt = "rbxassetid://985114322"
+DaySky.SkyboxDn = "rbxassetid://985114193"
+DaySky.SkyboxRt = "rbxassetid://985114322"
+DaySky.SunAngularSize = 0.3
+DaySky.CelestialBodiesShown = false
+DaySky.Parent = lighting
+
+-- 红色月亮效果
+local MoonRays = Instance.new("SunRaysEffect")
+MoonRays.Name = "RedMoonRays"
+MoonRays.Intensity = 0.15
+MoonRays.Spread = 0.1
+MoonRays.Parent = lighting
+
+-- 月光辉光效果
+local MoonBloom = Instance.new("BloomEffect")
+MoonBloom.Name = "MoonBloom"
+MoonBloom.Intensity = 0.3
+MoonBloom.Threshold = 0.2
+MoonBloom.Size = 50
+MoonBloom.Parent = lighting
+
+-- 月光颜色校正（让月亮变红）
+local MoonTint = Instance.new("ColorCorrectionEffect")
+MoonTint.Name = "MoonTint"
+MoonTint.Saturation = 0.05
+MoonTint.TintColor = Color3.fromRGB(255, 100, 100)  -- 红色调
+MoonTint.Parent = lighting
+
+-- 木星辉光效果
+local JupiterBloom = Instance.new("BloomEffect")
+JupiterBloom.Name = "JupiterBloom"
+JupiterBloom.Intensity = 0.2
+JupiterBloom.Threshold = 0.15
+JupiterBloom.Size = 35
+JupiterBloom.Parent = lighting
+
+-- 时间设置
+local currentTime = 12  -- 中午12点开始
+local timeSpeed = 60    -- 时间流逝速度
+
+-- 设置初始为白天
+DaySky.Enabled = true
+NightSky.Enabled = false
+MoonRays.Enabled = false
+MoonBloom.Enabled = false
+MoonTint.Enabled = false
+JupiterBloom.Enabled = false
+
+-- 设置初始光照（白天设置）
+lighting.ClockTime = currentTime
+lighting.Brightness = 2.0
+lighting.Ambient = Color3.fromRGB(128, 128, 128)
+lighting.FogColor = Color3.fromRGB(200, 220, 255)
+lighting.FogEnd = 1000
+lighting.FogStart = 0
+lighting.ExposureCompensation = 0.3
+lighting.ColorShift_Bottom = Color3.fromRGB(255, 255, 255)
+lighting.ColorShift_Top = Color3.fromRGB(255, 255, 255)
+lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+
+-- 时间流逝函数
+local function updateTime()
+    while true do
+        -- 更新时间
+        currentTime = currentTime + 0.1  -- 每6秒增加1小时
+        
+        if currentTime >= 24 then
+            currentTime = 0
+        end
+        
+        lighting.ClockTime = currentTime
+        
+        -- 根据时间切换昼夜
+        if currentTime >= 19 or currentTime < 5 then
+            -- 夜晚 (7pm - 5am) - 启用红色月亮和木星效果
+            DaySky.Enabled = false
+            NightSky.Enabled = true
+            MoonRays.Enabled = true
+            MoonBloom.Enabled = true
+            MoonTint.Enabled = true
+            JupiterBloom.Enabled = true
+            
+            -- 夜晚光照设置
+            lighting.Brightness = 1.2
+            lighting.Ambient = Color3.fromRGB(40, 40, 60)
+            lighting.FogColor = Color3.fromRGB(40, 20, 50)
+            lighting.ColorShift_Top = Color3.fromRGB(255, 120, 120)
+            lighting.OutdoorAmbient = Color3.fromRGB(50, 30, 70)
+            
+            print("夜晚模式：红色月亮 + 木星显示")
+            
+        else
+            -- 白天 (5am - 7pm) - 禁用夜晚效果
+            DaySky.Enabled = true
+            NightSky.Enabled = false
+            MoonRays.Enabled = false
+            MoonBloom.Enabled = false
+            MoonTint.Enabled = false
+            JupiterBloom.Enabled = false
+            
+            -- 白天光照设置
+            lighting.Brightness = 2.0
+            lighting.Ambient = Color3.fromRGB(128, 128, 128)
+            lighting.FogColor = Color3.fromRGB(200, 220, 255)
+            lighting.ColorShift_Top = Color3.fromRGB(255, 255, 255)
+            lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+            
+            print("白天模式：蓝天 + 小太阳")
+        end
+        
+        wait(6)  -- 每6秒更新一次
+    end
+end
+
+-- 启动时间流逝
+spawn(updateTime)
+
+print("时间流逝系统已启动！")
+print("木星资源ID: " .. JUPITER_TEXTURE_ID)
+print("当前时间: " .. math.floor(currentTime) .. ":00")
+print("夜晚会有红色月亮和木星效果")
+print("时间会自动流逝，每6秒游戏时间前进1小时")
