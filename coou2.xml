@@ -19,7 +19,7 @@ NightSky.SkyboxLf = "rbxassetid://159454299"
 NightSky.SkyboxBk = "rbxassetid://159454299"
 NightSky.SkyboxFt = "rbxassetid://159454299"
 NightSky.SkyboxDn = "rbxassetid://159454299"
-NightSky.SkyboxRt = "rbxassetid://1524699090"  -- 木星在右侧
+NightSky.SkyboxRt = "rbxassetid://5198893884"  -- 木星在右侧
 NightSky.StarCount = 2000
 NightSky.Parent = lighting
 
@@ -31,7 +31,7 @@ DaySky.SkyboxLf = "rbxassetid://985114322"
 DaySky.SkyboxBk = "rbxassetid://985114322"
 DaySky.SkyboxFt = "rbxassetid://985114322"
 DaySky.SkyboxDn = "rbxassetid://985114193"
-DaySky.SkyboxRt = "rbxassetid://985114322"
+DaySky.SkyboxRt = "rbxassetid://5198893884"
 DaySky.SunAngularSize = 0.3
 DaySky.CelestialBodiesShown = false
 DaySky.Parent = lighting
